@@ -1,0 +1,6 @@
+{
+  "name": "SIJAPRI — Kecamatan Krembung",
+  "description": "Sistem Informasi Jadwal Pimpinan dan Pemakaian Ruangan Pemerintah Kecamatan Krembung, Kabupaten Sidoarjo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

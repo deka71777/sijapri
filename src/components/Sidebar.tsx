@@ -5,6 +5,7 @@ import {
   DoorOpen,
   LayoutDashboard,
   LogIn,
+  LogOut,
   Settings,
   Users,
   Wrench,
@@ -21,6 +22,7 @@ interface SidebarProps {
   activeMaintenanceCount: number;
   currentUser: UserAccount;
   onOpenLoginModal: () => void;
+  onLogout: () => void;
 }
 
 interface NavItem {
@@ -41,6 +43,7 @@ export function Sidebar({
   activeMaintenanceCount,
   currentUser,
   onOpenLoginModal,
+  onLogout,
 }: SidebarProps) {
   const isSuperAdmin = currentUser.role === 'Super Admin';
   const isPimpinan = currentUser.role === 'Pimpinan';
@@ -160,17 +163,30 @@ export function Sidebar({
             {currentUser.role} · {currentUser.unitName}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            onOpenLoginModal();
-            onCloseMobile();
-          }}
-          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
-        >
-          <LogIn className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
-          <span>Login / Ganti Role</span>
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onOpenLoginModal();
+              onCloseMobile();
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <LogIn className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
+            <span>Ganti Akun</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onCloseMobile();
+              onLogout();
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-medium text-red-300 bg-slate-800 hover:bg-red-950/60 hover:text-red-200 border border-slate-700 hover:border-red-800/70 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <LogOut className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            <span>Keluar</span>
+          </button>
+        </div>
       </div>
     </div>
   );

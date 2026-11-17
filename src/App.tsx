@@ -6,6 +6,7 @@ import { ChatbotView } from './components/ChatbotView';
 import { DashboardView } from './components/DashboardView';
 import { KalenderView } from './components/KalenderView';
 import { LoginModal } from './components/LoginModal';
+import { LoginView } from './components/LoginView';
 import { MaintenanceView } from './components/MaintenanceView';
 import { SettingsView } from './components/SettingsView';
 import { Sidebar } from './components/Sidebar';
@@ -68,13 +69,33 @@ const SECTION_META: Record<NavSection, { title: string; subtitle: string }> = {
   },
 };
 
+const AUTH_STORAGE_KEY = 'sijapri_auth_user_id';
+
+function readSavedAuthId(): string | null {
+  try {
+    return sessionStorage.getItem(AUTH_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [users, setUsers] = useState<UserAccount[]>(INITIAL_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string>(INITIAL_USERS[0].id);
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    const savedId = readSavedAuthId();
+    if (savedId && INITIAL_USERS.some((u) => u.id === savedId && u.isActive)) {
+      return savedId;
+    }
+    return INITIAL_USERS[0].id;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const savedId = readSavedAuthId();
+    return Boolean(savedId && INITIAL_USERS.some((u) => u.id === savedId && u.isActive));
+  });
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
 
   const [agendas, setAgendas] = useState<AgendaItem[]>(INITIAL_AGENDAS);
@@ -128,9 +149,26 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user: UserAccount) => {
+    const loginTime = `2026-11-16 ${new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })} WIB`;
+    try {
+      sessionStorage.setItem(AUTH_STORAGE_KEY, user.id);
+    } catch {
+      // Ignore storage restriction
+    }
+    setUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, lastLogin: loginTime } : u)),
+    );
     setCurrentUserId(user.id);
+    setIsAuthenticated(true);
     setShowLoginModal(false);
     appendAudit(`Login ke sistem sebagai ${user.role}`, 'Autentikasi', user);
+    if (!isAuthenticated) {
+      setActiveSection('dashboard');
+      return;
+    }
     if ((activeSection === 'users' || activeSection === 'pengaturan') && user.role !== 'Super Admin') {
       setActiveSection('dashboard');
     } else if (
@@ -139,6 +177,19 @@ export default function App() {
     ) {
       setActiveSection('dashboard');
     }
+  };
+
+  const handleLogout = () => {
+    appendAudit(`Logout dari sistem`, 'Autentikasi', currentUser);
+    try {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch {
+      // Ignore storage restriction
+    }
+    setIsAuthenticated(false);
+    setShowLoginModal(false);
+    setMobileSidebarOpen(false);
+    setActiveSection('dashboard');
   };
 
   const handleAddUser = (draft: Omit<UserAccount, 'id' | 'lastLogin'>) => {
@@ -282,6 +333,16 @@ export default function App() {
 
   const meta = SECTION_META[activeSection];
 
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        users={users}
+        settings={settings}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-slate-50 text-slate-900">
       <Sidebar
@@ -293,6 +354,7 @@ export default function App() {
         activeMaintenanceCount={activeMaintenanceCount}
         currentUser={currentUser}
         onOpenLoginModal={() => setShowLoginModal(true)}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
